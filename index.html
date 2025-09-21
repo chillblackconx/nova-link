@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NovaLink - Chat futuriste</title>
+  <style>
+    /* SplashScreen styles */
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+    }
+
+    .splash-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: white;
+      flex-direction: column;
+      transition: all 0.5s ease;
+    }
+
+    .logo {
+      width: 200px;
+      height: 200px;
+      object-fit: contain;
+    }
+
+    .step2 {
+      background-color: black;
+      color: white;
+    }
+
+    .black-circle {
+      width: 150px;
+      height: 150px;
+      background-color: black;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .logo-web {
+      width: 70px;
+      height: 70px;
+      margin-bottom: 10px;
+    }
+
+    .hyper-text {
+      font-size: 20px;
+      font-weight: bold;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div id="splash" class="splash-container">
+      <img id="logo-main" src="assets/logo.png" alt="NovaLink" class="logo" />
+    </div>
+  </div>
+
+  <script>
+    const splash = document.getElementById('splash');
+    const logoMain = document.getElementById('logo-main');
+
+    // Affiche logo principal pendant 3s
+    setTimeout(() => {
+      splash.innerHTML = `
+        <div class="black-circle">
+          <img src="assets/logoWeb.png" alt="Web Logo" class="logo-web">
+          <div class="hyper-text">Hyper</div>
+        </div>
+      `;
+      splash.classList.add('step2');
+    }, 3000);
+
+    // Après 1 seconde, charger le reste de l'application
+    setTimeout(() => {
+      splash.style.display = 'none';
+      // Ici, tu pourras charger ton application React
+      // par exemple ReactDOM.render(<App />, document.getElementById('root'));
+    }, 4000);
+  </script>
+</body>
+</html>
