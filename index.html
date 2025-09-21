@@ -11,10 +11,11 @@ body, html { margin:0; padding:0; height:100%; font-family: Arial, sans-serif; b
 .splash-container { display:flex; justify-content:center; align-items:center; height:100vh; flex-direction:column; transition: all 0.5s ease; }
 .neon-n { font-size:200px; color:red; text-shadow: 0 0 5px #f00,0 0 10px #f00,0 0 20px #f00,0 0 40px #ff0000; background:black; width:200px; height:200px; display:flex; justify-content:center; align-items:center; border-radius:20px; }
 
-/* Login screen */
+/* Login / Signup screen */
 #loginScreen { display:none; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#111; }
 input { padding:10px; margin:5px; border-radius:5px; border:none; font-size:16px; }
 button { padding:10px 20px; margin:5px; font-size:16px; border:none; border-radius:5px; cursor:pointer; background:red; color:white; }
+#loginScreen div { display:flex; flex-direction:column; align-items:center; }
 
 /* Chat screen */
 #chatScreen { display:none; height:100vh; display:flex; flex-direction:column; }
@@ -34,14 +35,27 @@ button { padding:10px 20px; margin:5px; font-size:16px; border:none; border-radi
   <div class="neon-n">N</div>
 </div>
 
-<!-- Login Screen -->
+<!-- Login / Signup Screen -->
 <div id="loginScreen">
-  <h2>Connexion NovaLink</h2>
-  <input type="text" id="username" placeholder="Nom d'utilisateur">
-  <input type="password" id="password" placeholder="Mot de passe">
-  <input type="text" id="nlink" placeholder="Code NLINK">
-  <button id="loginBtn">Se connecter</button>
-  <div id="loginError" style="color:red;"></div>
+  <div id="loginForm">
+    <h2>Connexion</h2>
+    <input type="text" id="loginUsername" placeholder="Nom d'utilisateur">
+    <input type="password" id="loginPassword" placeholder="Mot de passe">
+    <input type="text" id="loginNlink" placeholder="Code NLINK">
+    <button id="loginBtn">Se connecter</button>
+    <div id="loginError" style="color:red;"></div>
+    <p>Pas de compte ? <button id="showSignup">Créer un compte</button></p>
+  </div>
+
+  <div id="signupForm" style="display:none;">
+    <h2>Créer un compte</h2>
+    <input type="text" id="signupUsername" placeholder="Nom d'utilisateur">
+    <input type="password" id="signupPassword" placeholder="Mot de passe">
+    <input type="text" id="signupNlink" placeholder="Code NLINK">
+    <button id="signupBtn">Créer le compte</button>
+    <button id="backToLogin">Retour</button>
+    <div id="signupError" style="color:red;"></div>
+  </div>
 </div>
 
 <!-- Chat Screen -->
@@ -77,34 +91,88 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Splash Screen
+// Splash screen
 setTimeout(() => {
   document.getElementById('splash').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
 }, 3000);
 
+// Switch login/signup
+document.getElementById('showSignup').onclick = () => {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('signupForm').style.display = 'flex';
+};
+document.getElementById('backToLogin').onclick = () => {
+  document.getElementById('signupForm').style.display = 'none';
+  document.getElementById('loginForm').style.display = 'flex';
+};
+
 // Login
-const loginBtn = document.getElementById('loginBtn');
-loginBtn.onclick = () => {
-  const username = document.getElementById('username').value.trim();
-  const password = document.getElementById('password').value.trim();
-  const nlink = document.getElementById('nlink').value.trim();
+document.getElementById('loginBtn').onclick = () => {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  const nlink = document.getElementById('loginNlink').value.trim();
   if(!username || !password || !nlink){
     document.getElementById('loginError').innerText = "Remplir tous les champs";
     return;
   }
-  // Ici tu peux valider mot de passe simple (côté client)
-  if(password.length < 3){ document.getElementById('loginError').innerText = "Mot de passe trop court"; return; }
-  // Login OK
   window.currentUser = username;
+  currentGroupId = nlink;
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('chatScreen').style.display = 'flex';
+
+  // Ajouter user au groupe
+  db.collection("groups").doc(nlink).get().then(doc=>{
+    if(doc.exists){
+      const groupData = doc.data();
+      if(!groupData.members.includes(username)){
+        groupData.members.push(username);
+        db.collection("groups").doc(nlink).update({ members: groupData.members });
+      }
+      document.getElementById('currentGroupName').innerText = "Groupe: " + groupData.name;
+      listenMessages(nlink);
+    } else {
+      alert("Groupe introuvable.");
+    }
+  });
+};
+
+// Signup
+document.getElementById('signupBtn').onclick = () => {
+  const username = document.getElementById('signupUsername').value.trim();
+  const password = document.getElementById('signupPassword').value.trim();
+  const nlink = document.getElementById('signupNlink').value.trim();
+  if(!username || !password || !nlink){
+    document.getElementById('signupError').innerText = "Remplir tous les champs";
+    return;
+  }
+  if(password.length < 3){
+    document.getElementById('signupError').innerText = "Mot de passe trop court";
+    return;
+  }
+  window.currentUser = username;
+  currentGroupId = nlink;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('chatScreen').style.display = 'flex';
+
+  db.collection("groups").doc(nlink).get().then(doc=>{
+    if(doc.exists){
+      const groupData = doc.data();
+      if(!groupData.members.includes(username)){
+        groupData.members.push(username);
+        db.collection("groups").doc(nlink).update({ members: groupData.members });
+      }
+      document.getElementById('currentGroupName').innerText = "Groupe: " + groupData.name;
+      listenMessages(nlink);
+    } else {
+      alert("Groupe introuvable.");
+    }
+  });
 };
 
 // Group management
 let currentGroupId = null;
-const createGroupBtn = document.getElementById('createGroupBtn');
-createGroupBtn.onclick = async () => {
+document.getElementById('createGroupBtn').onclick = async () => {
   const name = document.getElementById('newGroupName').value.trim();
   if(!name) return;
   const docRef = await db.collection("groups").add({ name: name, members: [window.currentUser] });
@@ -113,8 +181,7 @@ createGroupBtn.onclick = async () => {
   listenMessages(currentGroupId);
 };
 
-const joinGroupBtn = document.getElementById('joinGroupBtn');
-joinGroupBtn.onclick = async () => {
+document.getElementById('joinGroupBtn').onclick = async () => {
   const code = document.getElementById('joinGroupCode').value.trim();
   if(!code) return;
   const snapshot = await db.collection("groups").doc(code).get();
@@ -130,8 +197,7 @@ joinGroupBtn.onclick = async () => {
 };
 
 // Chat
-const sendBtn = document.getElementById('sendBtn');
-sendBtn.onclick = () => {
+document.getElementById('sendBtn').onclick = () => {
   const msgInput = document.getElementById('messageInput');
   if(!msgInput.value || !currentGroupId) return;
   db.collection("groups").doc(currentGroupId).collection("messages").add({
